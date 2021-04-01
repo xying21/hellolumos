@@ -62,7 +62,8 @@ export async function commonTransfer(
 }
 
 export async function deposit2DAO(
-    sender: string,
+    fromInfo: FromInfo,
+    toAddress: string,
     amount: bigint,
     txFee: bigint,
     privateKey:string
@@ -70,11 +71,11 @@ export async function deposit2DAO(
     let skeleton:TransactionSkeletonType = TransactionSkeleton({cellProvider: INDEXER});
     //@ts-ignore
     console.log("Deposit to DAO transaction");
-    skeleton = await dao.deposit(skeleton,sender,sender,BigInt(amount));
+    skeleton = await dao.deposit(skeleton,fromInfo,toAddress,BigInt(amount));
     console.log(JSON.stringify(createTransactionFromSkeleton(skeleton), null, 2));
-    skeleton = await secp256k1Blake160.payFee(skeleton,sender,BigInt(txFee));
+    skeleton = await common.payFee(skeleton,[fromInfo],BigInt(txFee));
     console.log(createTransactionFromSkeleton(skeleton).inputs.length);
-    skeleton = secp256k1Blake160.prepareSigningEntries(skeleton);
+    skeleton = common.prepareSigningEntries(skeleton);
     console.log("signingEntries:",skeleton.get("signingEntries").toArray());
     
     const tx = await signandSeal(skeleton,privateKey);
@@ -104,8 +105,8 @@ export async function withdrawfromDAO(
     console.log("Withdraw a DAO cell for the address", frominfo);
     let skeleton = TransactionSkeleton({ cellProvider: INDEXER });
     skeleton = await dao.withdraw(skeleton, cell, frominfo);
-    skeleton = await secp256k1Blake160.payFee(skeleton, frominfo, BigInt(txFee));
-    skeleton = secp256k1Blake160.prepareSigningEntries(skeleton);
+    skeleton = await common.payFee(skeleton,[frominfo],BigInt(txFee));
+    skeleton = common.prepareSigningEntries(skeleton);
     console.log("signingEntries:",skeleton.get("signingEntries").toArray());
     const tx = await signandSeal(skeleton,privateKey);
     //const rpc = new RPC("http://127.0.0.1:8114");
@@ -124,8 +125,8 @@ export async function unlockWithdraw(
 ):Promise<Hash> {
     let skeleton = TransactionSkeleton({ cellProvider: INDEXER });
     skeleton = await dao.unlock(skeleton,depositinput,withdrawinput,toaddress,frominfo);
-    skeleton = await secp256k1Blake160.payFee(skeleton, frominfo, BigInt(txFee));
-    skeleton = secp256k1Blake160.prepareSigningEntries(skeleton);
+    skeleton = await common.payFee(skeleton, [frominfo], BigInt(txFee));
+    skeleton = common.prepareSigningEntries(skeleton);
     console.log("signingEntries:",skeleton.get("signingEntries").toArray());
     const tx = await signandSeal(skeleton,privateKey);
     const hash = await rpc.send_transaction(tx);
@@ -134,7 +135,7 @@ export async function unlockWithdraw(
 }
 
 
-export async function locktimepoolTX(
+export async function locktimePoolTransfer(
     toaddress:string,
     frominfo: string,
     amount:bigint,

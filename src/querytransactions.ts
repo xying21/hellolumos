@@ -7,7 +7,7 @@ import { RPC } from "@ckb-lumos/rpc";
 
 const rpc = new RPC("http://127.0.0.1:8114");
 
-export async function getTxbyLock (
+export async function getTxsbyLock (
   lockScript: Script,
 ) {
   console.log("Get transactions by lock script:");
@@ -25,52 +25,52 @@ export async function getTxbyLock (
 }
 
 
- export async function getTxbetweenBlocks (
+ export async function getTxsbetweenBlocks (
     lockScript: Script,
     fromBlock: string,
     toBlock: string
   )  {
-    const txCollector = new TransactionCollector(INDEXER,{lock:lockScript,fromBlock:fromBlock,toBlock:toBlock});
+    const txCollector = new TransactionCollector(INDEXER,{lock:lockScript,fromBlock,toBlock});
     console.log("Get transactions between given blocks:");
     for await (const txWithStatus of txCollector.collect()) {
         console.log(txWithStatus);
     }
 }
 
-export async function getTxandSkip (
-    lockScript: Script,
+export async function getTxsandSkip (
+    lock: Script,
     skip: number
   )  {
-    const txCollector = new TransactionCollector(INDEXER,{lock:lockScript,skip:skip});
+    const txCollector = new TransactionCollector(INDEXER,{lock,skip});
     console.log("Get transactions and skip the first", skip, "trasactions");
     for await (const txWithStatus of txCollector.collect()) {
         console.log(txWithStatus);
     }
 }
 
-export async function getTxandOrder (
-    lockScript: Script,
+export async function getTxsandOrder (
+    lock: Script,
     order: "asc"|"desc"
   )  {
-    const txCollector = new TransactionCollector(INDEXER,{lock:lockScript,order:order});
+    const txCollector = new TransactionCollector(INDEXER,{lock,order});
     console.log("Get transactions in order of", order);
     for await (const txWithStatus of txCollector.collect()) {
         console.log(txWithStatus);
     }
 }
 
-export async function prefixSearch  (
-    lockScript: Script,
-    argslen : number
+export async function findTXsbyPrefix  (
+    lock: Script,
+    argsLen : number
   )  {
-    const txCollector = new TransactionCollector(INDEXER,{lock:lockScript,argsLen:argslen});
+    const txCollector = new TransactionCollector(INDEXER,{lock,argsLen});
     console.log("Prefix Search");
     for await (const txWithStatus of txCollector.collect()) {
         console.log(txWithStatus);
     }
 }
 
-export async function  fineGrainedQuery  (
+export async function  finegrainedSearch  (
     lockScript: Script,
     typescript : Script,
     argslen: number,
@@ -88,7 +88,7 @@ export async function  fineGrainedQuery  (
     }
 }
 
-export async function getTXbyHash  (
+export async function getTxsbyHash  (
   txHash: string
 )   {
   const txWithStatus = await rpc.get_transaction(txHash);

@@ -9,7 +9,7 @@ import {utils, Hash,Header } from "@ckb-lumos/base";
 const {  computeScriptHash } = utils;
 
 
-export const findCellsbylock = async (
+export const findCellsbyLock = async (
     lockScript: Script,
   ): Promise<Cell[]> => {
  
@@ -53,23 +53,22 @@ export const DAOscript:Script = {
 };
 
 
-export async function findCellsfromto (
+export async function findCellsBetweenBlocks (
   lockScript: Script,
-  fromblock: string,
-  toblock: string
+  fromBlock: string,
+  toBlock: string
 ): Promise<Cell[]> {
 
-const collector = INDEXER.collector({ lock:lockScript, fromBlock:fromblock,toBlock:toblock});
+const collector = INDEXER.collector({ lock:lockScript, fromBlock,toBlock});
 const cells: Cell[] = [];
-console.log("Find cells from block",fromblock,"to block", toblock);
+console.log("Find cells from block",fromBlock,"to block", toBlock);
 for await (const cell of collector.collect()) {
     cells.push(cell);
    // console.log(cell);
  }
 return cells;
 };
-const fromblock = "0x11";
-const toblock = "0x15";
+
 
 export async function findCellsandSkip(
   lockScript: Script,
@@ -86,7 +85,7 @@ for await (const cell of collector.collect()) {
 return cells;
 };
 
-export async function findCellsinOrderofBlockNum (
+export async function findCellsandOrder (
   lockScript: Script,
   order:"asc"|"desc"
 ): Promise<Cell[]> {
@@ -114,7 +113,7 @@ for await (const cell of collector.collect()) {
 return cells;
 };
 
-export async function finegrainedsearch(
+export async function finegrainedSearch(
   lockScript: Script,
   typeScript: Script,
   argslen: number,
@@ -135,7 +134,7 @@ return cells;
 };
 
 
-export async function getminimalCellCapacity(
+export async function getMinimalCellCapacity(
  fullcell:Cell
 ) {
  // const fullcell = (await findCellsbylock(lockScript))[0];
@@ -199,15 +198,16 @@ export const findCellsforSufficientAmount = async (
 };
 
 
+export const transactionManager = new TransactionManager(INDEXER);
+transactionManager.start();
+
 export async function getUncommittedCells(
   lockScript:Script
 ): Promise<Cell[]>  {
-  const transactionmanager = new TransactionManager(INDEXER);
-  transactionmanager.start();
 
   const cells:Cell[] = [];
   console.log("Get uncommitted cells");
-  const collector = transactionmanager.collector( {lock:lockScript});
+  const collector = transactionManager.collector( {lock:lockScript});
   for await (const cell of collector.collect()) {
     cells.push(cell);
     //console.log(cell)
@@ -215,7 +215,9 @@ export async function getUncommittedCells(
   return cells;
 }
 
-export async function locktimepoolCells(
+
+
+export async function locktimePoolCells(
   frominfo: string,
 ):Promise<Cell[]> {
   const collector = new locktimePool.CellCollector(frominfo,INDEXER);

@@ -1,15 +1,9 @@
-import {
-    AddressPrefix,
-    AddressType as Type,
-    pubkeyToAddress,
-  } from "@nervosnetwork/ckb-sdk-utils";
 import { utils, Address, Hash, Script, HexString } from "@ckb-lumos/base";
-import {INDEXER} from "./index";
-import * as ckbUtils from "@nervosnetwork/ckb-sdk-utils";
+import { CONFIG, INDEXER} from "./index";
 import { mnemonic, ExtendedPrivateKey, key } from "@ckb-lumos/hd";
-import { CacheManager,CellCollector, CellCollectorWithQueryOptions, getDefaultInfos, getBalance } from "@ckb-lumos/hd-cache";
+import { CacheManager,CellCollector, getBalance } from "@ckb-lumos/hd-cache";
 import { generateAddress, parseAddress } from "@ckb-lumos/helpers";
-import { predefined } from "@ckb-lumos/config-manager";
+import { Config } from "@ckb-lumos/config-manager";
 import { Reader } from "ckb-js-toolkit";
 
 const { CKBHasher, computeScriptHash } = utils;
@@ -59,27 +53,6 @@ export async function publickeyHash (
   return keyHash;
 }
 
-export async function publicKey2Addresses (
-    publicKey: string,
-  ):Promise<string[]> {
-    const pubkey = publicKey.startsWith("0x") ? publicKey : `0x${publicKey}`;
-    
-    const mainnetaddress = pubkeyToAddress(pubkey, {
-        prefix:AddressPrefix.Mainnet,
-        type: Type.HashIdx,
-        codeHashOrCodeHashIndex: "0x00",
-      });
-      const testnetaddress = pubkeyToAddress(pubkey, {
-        prefix:AddressPrefix.Testnet,
-        type: Type.HashIdx,
-        codeHashOrCodeHashIndex: "0x00",
-      });
-    return [mainnetaddress, testnetaddress];
-    
-}
-
-
-
 export async function getBalancebyHDCache  (
   m:string
  )  {
@@ -98,32 +71,24 @@ export async function getBalancebyHDCache  (
    console.log("The HD wallet balance is", balance);
  }
 
-export const publicKeyToTestnetAddress = (
-  publicKey: string,
-  prefix = AddressPrefix.Testnet
-) => {
-  const pubkey = publicKey.startsWith("0x") ? publicKey : `0x${publicKey}`;
-  return pubkeyToAddress(pubkey, {
-    prefix,
-    type: Type.HashIdx,
-    codeHashOrCodeHashIndex: "0x00",
-  });
-};
+// export const publicKeyToTestnetAddress = (
+//   publicKey: string,
+//   prefix = AddressPrefix.Testnet
+// ) => {
+//   const pubkey = publicKey.startsWith("0x") ? publicKey : `0x${publicKey}`;
+//   return pubkeyToAddress(pubkey, {
+//     prefix,
+//     type: Type.HashIdx,
+//     codeHashOrCodeHashIndex: "0x00",
+//   });
+// };
 
-export async function generateMainnetAddress(
+export async function generateAddressfromLock(
   lockScript:Script,
+  config: Config
 )  {
-  const config = undefined || predefined.LINA;
-  const mainnetAddress = generateAddress(lockScript,{config});
-  console.log("The mainnet address for the lockscript is", mainnetAddress);  
-}
-
-export async function generateTestnetAddress(
-  lockScript:Script,
-)  {
-  const config = undefined || predefined.AGGRON4;
-  const testnetAddress = generateAddress(lockScript, {config});
-  console.log("The testnet address for the lockscript is", testnetAddress);  
+  const address = generateAddress(lockScript, {config});
+  console.log("The address for the lockscript is", address);  
 }
 
 export async function generatelockFromAddress (
@@ -145,13 +110,21 @@ export type Account = {
   lockScript: Script;
   lockHash: Hash;
   address: Address;
-  pubKey: HexString;
+  pubKey: string;
   lockScriptMeta?: any;
 };
- export const generateAccountFromPrivateKey = (privKey: HexString): Account => {
-  const pubKey = ckbUtils.privateKeyToPublicKey(privKey);
-  const address = publicKeyToTestnetAddress(pubKey);
-  const lockScript = parseAddress(address);
+ export const generateAccountFromPrivateKey = (privKey: string): Account => {
+  const pubKey = key.privateToPublic(privKey);
+  console.log("pubKey is", pubKey);
+  const args = key.publicKeyToBlake160(pubKey);
+  console.log("args is", args);
+  const template = CONFIG.SCRIPTS["SECP256K1_BLAKE160"]!
+  const lockScript = {    
+    code_hash: template.CODE_HASH,
+    hash_type: template.HASH_TYPE,
+    args: args
+  };
+  const address = generateAddress(lockScript);
   const lockHash = computeScriptHash(lockScript);
   return {
     lockScript,
