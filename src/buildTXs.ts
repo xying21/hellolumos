@@ -1,7 +1,7 @@
 //import { ecdsaSign } from "secp256k1";
 import { RPC } from "@ckb-lumos/rpc";
-import { sealTransaction, createTransactionFromSkeleton, TransactionSkeleton, TransactionSkeletonType } from "@ckb-lumos/helpers";
-import { common, secp256k1Blake160, dao } from "@ckb-lumos/common-scripts";
+import { sealTransaction, createTransactionFromSkeleton, TransactionSkeleton, TransactionSkeletonType, parseAddress } from "@ckb-lumos/helpers";
+import { common, dao, sudt } from "@ckb-lumos/common-scripts";
 import {Hash,Header, Cell, Transaction } from "@ckb-lumos/base";
 import {locktimePool, FromInfo} from "@ckb-lumos/common-scripts";
 import {key} from "@ckb-lumos/hd";
@@ -86,12 +86,12 @@ export async function deposit2DAO(
 }
 
 export async function listDAOCells(
-    fromaddress: string,
-    celltype: "deposit" | "all" | "withdraw"
+    fromAddress: string,
+    cellType: "deposit" | "all" | "withdraw"
 ) {
-    console.log("List the",celltype,"cells for the address", fromaddress);
+    console.log("List the",cellType,"cells for the address", fromAddress);
     //@ts-ignore
-    for await (const cell of dao.listDaoCells(INDEXER,fromaddress,celltype)) {
+    for await (const cell of dao.listDaoCells(INDEXER,fromAddress,cellType)) {
          console.log(cell); 
     }
 }
@@ -151,6 +151,64 @@ export async function locktimePoolTransfer(
     skeleton = await locktimePool.payFee(skeleton,[frominfo], txFee, tipheader);
     skeleton = locktimePool.prepareSigningEntries(skeleton);
     skeleton.get("signingEntries").toArray();
+    const tx = await signandSeal(skeleton,privateKey);
+    const hash = await rpc.send_transaction(tx);
+    console.log("The transaction hash is",hash);
+    return hash;
+}
+
+//sUDT
+export async function issueSUDT(
+    fromInfo: FromInfo,
+    amount: bigint,
+    capacity: bigint,
+    txFee: bigint,
+    privateKey:string
+):Promise<Hash> {
+    let skeleton:TransactionSkeletonType = TransactionSkeleton({cellProvider: INDEXER});
+    //@ts-ignore
+    console.log("Issue SUDT tokens.");
+    skeleton = await sudt.issueToken(skeleton,fromInfo,amount,capacity);
+    console.log(JSON.stringify(createTransactionFromSkeleton(skeleton), null, 2));
+    skeleton = await common.payFee(skeleton,[fromInfo],BigInt(txFee));
+    console.log(createTransactionFromSkeleton(skeleton).inputs.length);
+    skeleton = common.prepareSigningEntries(skeleton);
+    console.log("signingEntries:",skeleton.get("signingEntries").toArray());
+    
+    const tx = await signandSeal(skeleton,privateKey);
+    const hash = await rpc.send_transaction(tx);
+    console.log("The transaction hash is",hash);
+    return hash;
+}
+
+export async function computeSUDTToken(
+    fromInfo: FromInfo,
+):Promise<Hash> {
+    const sudtToken = sudt.ownerForSudt(fromInfo);
+    console.log("SUDT Token:",sudtToken);
+    
+    return sudtToken;
+}
+
+export async function transferSUDT(
+    fromInfo: FromInfo,
+    toAddress: string,
+    amount: bigint,
+    capacity: bigint,
+    txFee: bigint,
+    privateKey:string
+):Promise<Hash> {
+    let skeleton:TransactionSkeletonType = TransactionSkeleton({cellProvider: INDEXER});
+    //@ts-ignore
+    console.log("Transfer SUDT tokens.");
+    const sudtToken = sudt.ownerForSudt(fromInfo);
+    skeleton = await sudt.transfer(skeleton,[fromInfo],sudtToken, toAddress, amount,undefined, capacity);
+    console.log(JSON.stringify(createTransactionFromSkeleton(skeleton), null, 2));
+    skeleton = await common.payFee(skeleton,[fromInfo],BigInt(txFee));
+    console.log(createTransactionFromSkeleton(skeleton).inputs.length);
+    skeleton = common.prepareSigningEntries(skeleton);
+    console.log("signingEntries:",skeleton.get("signingEntries").toArray());
+    
     const tx = await signandSeal(skeleton,privateKey);
     const hash = await rpc.send_transaction(tx);
     console.log("The transaction hash is",hash);

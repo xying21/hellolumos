@@ -138,7 +138,6 @@ export async function getMinimalCellCapacity(
  fullcell:Cell
 ) {
  // const fullcell = (await findCellsbylock(lockScript))[0];
-  console.log("The full cell is", fullcell);
   const result = minimalCellCapacity(fullcell);
   console.log("The minimal cell capacity is",result);
 };
@@ -226,4 +225,23 @@ export async function locktimePoolCells(
       cells.push(cell);
       console.log(cell); }
    return cells;
+}
+
+export async function getSUDTBalance (
+  lock:Script,
+  sudtType: Script
+)  {
+  let balance = BigInt(0);
+  const collector = INDEXER.collector({lock, type:sudtType});
+  const cells: Cell[] = [];
+  //console.log("Get the balance of an account");
+  for await (const cell of collector.collect()) {
+      cells.push(cell);
+   }
+ 
+  balance = cells
+  .map((cell) => utils.readBigUInt128LE(cell.data))
+  .reduce((balance, amount) => (balance = balance += amount),BigInt(0));
+ //  .reduce((balance, capacity) => (balance = balance += capacity),BigInt(0));
+  console.log("The balance of the account is", balance);
 }

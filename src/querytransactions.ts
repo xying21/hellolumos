@@ -94,7 +94,7 @@ export async function getTxsbyHash  (
   const txWithStatus = await rpc.get_transaction(txHash);
   
   const status = txWithStatus?.tx_status.status;
-  const blockhash = txWithStatus?.tx_status.block_hash;
+  const blockHash = txWithStatus?.tx_status.block_hash;
   console.log("The transaction status is",status);
-  console.log("The block hash for the transaction is",blockhash);
+  console.log("The block hash for the transaction is",blockHash);
 }

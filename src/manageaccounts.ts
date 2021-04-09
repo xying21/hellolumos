@@ -1,10 +1,11 @@
 import { utils, Address, Hash, Script, HexString } from "@ckb-lumos/base";
 import { CONFIG, INDEXER} from "./index";
-import { mnemonic, ExtendedPrivateKey, key } from "@ckb-lumos/hd";
+import { mnemonic, ExtendedPrivateKey, key,Keystore, XPubStore, AccountExtendedPublicKey, ExtendedPublicKey } from "@ckb-lumos/hd";
 import { CacheManager,CellCollector, getBalance } from "@ckb-lumos/hd-cache";
 import { generateAddress, parseAddress } from "@ckb-lumos/helpers";
 import { Config } from "@ckb-lumos/config-manager";
 import { Reader } from "ckb-js-toolkit";
+
 
 const { CKBHasher, computeScriptHash } = utils;
 
@@ -22,14 +23,25 @@ export async function generateKey(
   console.log("The public key is", publickey);
 }
 
+  
 export async function private2Public (
-  privatekey: HexString
+  privateKey: HexString
 ):Promise<HexString> {
-  const pubkey = key.privateToPublic(privatekey);
+  const pubkey = key.privateToPublic(privateKey);
   
   console.log("The public key is",pubkey);
   return pubkey;
 }
+
+export async function public2Args (
+  publicKey: HexString
+):Promise<string> {
+  const args = key.publicKeyToBlake160(publicKey);
+  
+  console.log("The args is",args);
+  return args;
+}
+
 
 export async function signature2PublicKey (
   message: HexString,
@@ -53,11 +65,38 @@ export async function publickeyHash (
   return keyHash;
 }
 
+export async function generateKeystore(
+  password: string,
+  path: string,
+  name: string,
+  overwrite: boolean | undefined
+  ){
+    const m = mnemonic.generateMnemonic();
+    console.log("The mnemonic is",m);
+    const seed = mnemonic.mnemonicToSeedSync(m);
+    const extendedPrivateKey = ExtendedPrivateKey.fromSeed(seed);
+    console.log("The extendedPrivateKey is", extendedPrivateKey);
+    const keystore = Keystore.create(extendedPrivateKey, password);
+    keystore.save(path,{name, overwrite});
+  }
+
+export async function generateXPubStore(
+    extendedPrivateKey: ExtendedPrivateKey,
+    path: string,
+    overwrite: boolean | undefined
+  ){
+    const accountExtendedPublicKey = extendedPrivateKey.toAccountExtendedPublicKey();
+    console.log("The accountExtendedPublicKey is",accountExtendedPublicKey);
+    const xpubstore = new XPubStore(accountExtendedPublicKey);
+    xpubstore.save(path,{overwrite});
+}
+
+
 export async function getBalancebyHDCache  (
-  m:string
+  path:string,
+  password: string
  )  {
-   //const txcollector = new TransactionCollector(INDEXER,{lock});
-   const cacheManager = CacheManager.fromMnemonic(INDEXER, m); 
+   const cacheManager = CacheManager.loadFromKeystore(INDEXER, path,password); 
    cacheManager.startForever();
    const masterPubkey = cacheManager.getMasterPublicKeyInfo();
    const nextReceivingPubkey = cacheManager.getNextReceivingPublicKeyInfo();
@@ -66,22 +105,12 @@ export async function getBalancebyHDCache  (
     //await cacheManager.cache.loop();
     
     const collector = new CellCollector(cacheManager);
-
+    for await (const cell of collector.collect()) {
+      console.log(cell)
+    }
    const balance = await getBalance(collector);
    console.log("The HD wallet balance is", balance);
  }
-
-// export const publicKeyToTestnetAddress = (
-//   publicKey: string,
-//   prefix = AddressPrefix.Testnet
-// ) => {
-//   const pubkey = publicKey.startsWith("0x") ? publicKey : `0x${publicKey}`;
-//   return pubkeyToAddress(pubkey, {
-//     prefix,
-//     type: Type.HashIdx,
-//     codeHashOrCodeHashIndex: "0x00",
-//   });
-// };
 
 export async function generateAddressfromLock(
   lockScript:Script,
@@ -91,7 +120,7 @@ export async function generateAddressfromLock(
   console.log("The address for the lockscript is", address);  
 }
 
-export async function generatelockFromAddress (
+export async function generateLockFromAddress (
   address:Address
 )  {
   const lockscript = parseAddress(address);
