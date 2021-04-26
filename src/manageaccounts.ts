@@ -1,7 +1,7 @@
 import { utils, Address, Hash, Script, HexString } from "@ckb-lumos/base";
 import { CONFIG, INDEXER} from "./index";
 import { mnemonic, ExtendedPrivateKey, key,Keystore, XPubStore, AccountExtendedPublicKey, ExtendedPublicKey } from "@ckb-lumos/hd";
-import { CacheManager,CellCollector, getBalance } from "@ckb-lumos/hd-cache";
+import { CacheManager,CellCollector, getBalance, getDefaultInfos } from "@ckb-lumos/hd-cache";
 import { generateAddress, parseAddress } from "@ckb-lumos/helpers";
 import { Config } from "@ckb-lumos/config-manager";
 import { Reader } from "ckb-js-toolkit";
@@ -92,24 +92,26 @@ export async function generateXPubStore(
 }
 
 
-export async function getBalancebyHDCache  (
+export async function getBalancebyHDCache (
   path:string,
-  password: string
+  password: string,
+  needMasterPublicKey: boolean
  )  {
-   const cacheManager = CacheManager.loadFromKeystore(INDEXER, path,password); 
+   const cacheManager = CacheManager.loadFromKeystore(INDEXER, path, password,getDefaultInfos(),{needMasterPublicKey}); 
    cacheManager.startForever();
-   const masterPubkey = cacheManager.getMasterPublicKeyInfo();
-   const nextReceivingPubkey = cacheManager.getNextReceivingPublicKeyInfo();
-   const nextChangePubkey = cacheManager.getNextChangePublicKeyInfo();
-
-    //await cacheManager.cache.loop();
+  //  console.log("The master public key info is", cacheManager.getMasterPublicKeyInfo());
+  //  console.log("The next receiving public key info is", cacheManager.getNextReceivingPublicKeyInfo());
+  //  console.log("The next change public key info is",cacheManager.getNextChangePublicKeyInfo());
+  //  console.log("The receiving keys are",cacheManager.getReceivingKeys());
+  //@ts-ignore
+   await cacheManager.cache.loop();
     
-    const collector = new CellCollector(cacheManager);
+/*    const collector = new CellCollector(cacheManager);
     for await (const cell of collector.collect()) {
       console.log(cell)
-    }
-   const balance = await getBalance(collector);
-   console.log("The HD wallet balance is", balance);
+    } */
+  const balance = await getBalance(new CellCollector(cacheManager));
+  console.log("The HD wallet balance is", BigInt(balance));
  }
 
 export async function generateAddressfromLock(

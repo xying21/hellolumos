@@ -23,6 +23,13 @@
       "TX_HASH": "0xa563884b3686078ec7e7677a5f86449b15cf2693f3c1241766c6996f206cc541",
       "INDEX": "0x2",
       "DEP_TYPE": "code"
+    },
+    "ANYONE_CAN_PAY": {
+      "CODE_HASH": "0x636be2afb13c1d0f3478c22c6572b12dd13bd492f648302d5682fffe7e7efdaa",
+      "HASH_TYPE": "type",
+      "TX_HASH": "0xc520c895e20ade5b6b0bd90598f8b205afefdc316e38e87fac239ca3f0829378",
+      "INDEX": "0x0",
+      "DEP_TYPE": "dep_group"
     }
   }
 }
