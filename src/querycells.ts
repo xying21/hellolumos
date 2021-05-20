@@ -1,48 +1,36 @@
-import {INDEXER} from "./index";
-import { Address,Cell, Script, ScriptWrapper } from "@ckb-lumos/base";
+import { INDEXER } from "./index";
+import { Cell, Script, ScriptWrapper } from "@ckb-lumos/base";
 import { CONFIG } from "./index";
-import {minimalCellCapacity, generateAddress, parseAddress} from "@ckb-lumos/helpers";
-import TransactionManager = require ("@ckb-lumos/transaction-manager");
+import { minimalCellCapacity } from "@ckb-lumos/helpers";
+import TransactionManager = require("@ckb-lumos/transaction-manager");
 import { CellCollector } from "@ckb-lumos/indexer";
-import {locktimePool} from "@ckb-lumos/common-scripts";
-import {utils, Hash,Header } from "@ckb-lumos/base";
-const {  computeScriptHash } = utils;
+import { locktimePool } from "@ckb-lumos/common-scripts";
+import { utils } from "@ckb-lumos/base";
+const { computeScriptHash } = utils;
 
 
-export const findCellsbyLock = async (
-    lockScript: Script,
-  ): Promise<Cell[]> => {
- 
-  const collector = INDEXER.collector({ lock:lockScript});
+export const findCellsbyLock = async (lockScript: Script): Promise<Cell[]> => {
+  const collector = INDEXER.collector({ lock: lockScript });
   const cells: Cell[] = [];
   console.log("Find the cells by lock script:");
   for await (const cell of collector.collect()) {
-      cells.push(cell);
-      //console.log(cell);
-    }
-    return cells;
-  };
-// const lockscript:Script = {
-//   code_hash:
-//     "0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
-//   hash_type: "type",
-//   args: ALICE.ARGS,
-// };
+    cells.push(cell);
+  }
+  return cells;
+};
 
 export async function findCellsbyLockandType(
   lockScript: Script,
   typeScript: Script
-): Promise<Cell[]>  {
-
-const collector = INDEXER.collector({ lock:lockScript, type:typeScript});
-const cells: Cell[] = [];
-console.log("Find the cells by Lock and Type script");
-for await (const cell of collector.collect()) {
+): Promise<Cell[]> {
+  const collector = INDEXER.collector({ lock: lockScript, type: typeScript });
+  const cells: Cell[] = [];
+  console.log("Find the cells by Lock and Type script");
+  for await (const cell of collector.collect()) {
     cells.push(cell);
-    //console.log(cell);
- }
-return cells;
-};
+  }
+  return cells;
+}
 
 const template = CONFIG.SCRIPTS["DAO"]!;
 // the example uses the type script of DAO script 
@@ -53,121 +41,106 @@ export const DAOscript:Script = {
 };
 
 
-export async function findCellsBetweenBlocks (
+export async function findCellsBetweenBlocks(
   lockScript: Script,
   fromBlock: string,
   toBlock: string
 ): Promise<Cell[]> {
-
-const collector = INDEXER.collector({ lock:lockScript, fromBlock,toBlock});
-const cells: Cell[] = [];
-console.log("Find cells from block",fromBlock,"to block", toBlock);
-for await (const cell of collector.collect()) {
+  const collector = INDEXER.collector({ lock: lockScript, fromBlock, toBlock });
+  const cells: Cell[] = [];
+  console.log("Find cells from block", fromBlock, "to block", toBlock);
+  for await (const cell of collector.collect()) {
     cells.push(cell);
-   // console.log(cell);
- }
-return cells;
-};
+    // console.log(cell);
+  }
+  return cells;
+}
 
 
 export async function findCellsandSkip(
   lockScript: Script,
   skip: number
 ): Promise<Cell[]> {
-
-const collector = INDEXER.collector({ lock:lockScript, skip:skip});
-const cells: Cell[] = [];
-console.log("Find Cells and Skip the first",skip, "cells:");
-for await (const cell of collector.collect()) {
+  const collector = INDEXER.collector({ lock: lockScript, skip: skip });
+  const cells: Cell[] = [];
+  console.log("Find Cells and Skip the first", skip, "cells:");
+  for await (const cell of collector.collect()) {
     cells.push(cell);
     console.log(cell);
- }
-return cells;
-};
-
-export async function findCellsandOrder (
-  lockScript: Script,
-  order:"asc"|"desc"
-): Promise<Cell[]> {
-const collector = new CellCollector(INDEXER, { lock:lockScript, order:order});
-//const collector = INDEXER.collector({ lock:lockScript, order:order});
-const cells: Cell[] = [];
-console.log("Find Cells in descending", order, "order of block numbers:");
-for await (const cell of collector.collect()) {
-    cells.push(cell);
- }
-return cells;
-};
+  }
+  return cells;
+}
 
 export async function findCellsbyPrefix(
   lockScript: Script,
-  argslen:number
-): Promise<Cell[]>  {
-
-const collector = INDEXER.collector({ lock:lockScript,argsLen:argslen});
-const cells: Cell[] = [];
-console.log("Find Cells by prefix of args");
-for await (const cell of collector.collect()) {
+  argslen: number
+): Promise<Cell[]> {
+  const collector = INDEXER.collector({ lock: lockScript, argsLen: argslen });
+  const cells: Cell[] = [];
+  console.log("Find Cells by prefix of args");
+  for await (const cell of collector.collect()) {
     cells.push(cell);
- }
-return cells;
-};
+  }
+  return cells;
+}
 
 export async function finegrainedSearch(
   lockScript: Script,
-  typeScript: Script,
   argslen: number,
-  iotype:"output"|"input"|"both"
+//  iotype: "output" | "input" | "both"
 ): Promise<Cell[]> {
-const lock:ScriptWrapper = {
-  script:lockScript,
-  ioType:iotype,
-  argsLen: argslen
-}
-const collector = INDEXER.collector({ lock:lock,type:typeScript});
-const cells: Cell[] = [];
-console.log("Fine-Grained Query:");
-for await (const cell of collector.collect()) {
-    cells.push(cell);
- }
-return cells;
-};
-
-
-export async function getMinimalCellCapacity(
- fullcell:Cell
-) {
- // const fullcell = (await findCellsbylock(lockScript))[0];
-  const result = minimalCellCapacity(fullcell);
-  console.log("The minimal cell capacity is",result);
-};
-
-export async function getBalancebyLock (
-  lockScript:Script
-)  {
-  let balance = BigInt(0);
-  const collector = INDEXER.collector({ lock:lockScript});
+  const lock: ScriptWrapper = {
+    script: lockScript,
+//    ioType: iotype,
+    argsLen: argslen,
+  };
+  const collector = INDEXER.collector({ lock: lock });
   const cells: Cell[] = [];
-  //console.log("Get the balance of an account");
+  console.log("Fine-Grained Query:");
   for await (const cell of collector.collect()) {
-      cells.push(cell);
-   }
- 
+    cells.push(cell);
+  }
+  return cells;
+}
+
+export async function findCellsandOrder(
+  lockScript: Script,
+  order: "asc" | "desc"
+): Promise<Cell[]> {
+  const collector = new CellCollector(INDEXER, {
+    lock: lockScript,
+    order: order,
+  });
+  const cells: Cell[] = [];
+  console.log("Find Cells in", order, "order of block numbers:");
+  for await (const cell of collector.collect()) {
+    cells.push(cell);
+  }
+  return cells;
+}
+
+export async function getMinimalCellCapacity(fullcell: Cell) {
+  // const fullcell = (await findCellsbylock(lockScript))[0];
+  const result = minimalCellCapacity(fullcell);
+  console.log("The minimal cell capacity is", result);
+}
+
+export async function getBalancebyLock(lockScript: Script) {
+  let balance = BigInt(0);
+  const collector = INDEXER.collector({ lock: lockScript });
+  const cells: Cell[] = [];
+  for await (const cell of collector.collect()) {
+    cells.push(cell);
+  }
   balance = cells
-   .map((cell) =>
-     BigInt(
-       cell.cell_output.capacity
-     )
-   )
-   .reduce((balance, capacity) => (balance = balance += capacity),BigInt(0));
+    .map((cell) => BigInt(cell.cell_output.capacity))
+    .reduce((balance, capacity) => (balance = balance += capacity), BigInt(0));
   console.log("The balance of the account is", balance);
 }
 
-
-
 export const findCellsforSufficientAmount = async (
   lockScript: Script,
-  amount: BigInt
+  amount: bigint
 ): Promise<Cell[]> => {
   let foundCapacity = BigInt(0);
   const Cells = [] as Cell[];
@@ -197,51 +170,26 @@ export const findCellsforSufficientAmount = async (
 };
 
 
-export const transactionManager = new TransactionManager(INDEXER);
-transactionManager.start();
-
-export async function getUncommittedCells(
-  lockScript:Script
-): Promise<Cell[]>  {
-
-  const cells:Cell[] = [];
-  console.log("Get uncommitted cells");
-  const collector = transactionManager.collector( {lock:lockScript});
+export async function locktimePoolCells(frominfo: string): Promise<Cell[]> {
+  const collector = new locktimePool.CellCollector(frominfo, INDEXER);
+  const cells: Cell[] = [];
   for await (const cell of collector.collect()) {
     cells.push(cell);
-    //console.log(cell)
+    console.log(cell);
   }
   return cells;
 }
 
-
-
-export async function locktimePoolCells(
-  frominfo: string,
-):Promise<Cell[]> {
-  const collector = new locktimePool.CellCollector(frominfo,INDEXER);
-  const cells: Cell[] = [];
-  for await (const cell of collector.collect()) { 
-      cells.push(cell);
-      console.log(cell); }
-   return cells;
-}
-
-export async function getSUDTBalance (
-  lock:Script,
-  sudtType: Script
-)  {
+export async function getSUDTBalance(lock: Script, sudtType: Script) {
   let balance = BigInt(0);
-  const collector = INDEXER.collector({lock, type:sudtType});
+  const collector = INDEXER.collector({ lock, type: sudtType });
   const cells: Cell[] = [];
-  //console.log("Get the balance of an account");
   for await (const cell of collector.collect()) {
-      cells.push(cell);
-   }
- 
+    cells.push(cell);
+  }
+
   balance = cells
-  .map((cell) => utils.readBigUInt128LE(cell.data))
-  .reduce((balance, amount) => (balance = balance += amount),BigInt(0));
- //  .reduce((balance, capacity) => (balance = balance += capacity),BigInt(0));
+    .map((cell) => utils.readBigUInt128LE(cell.data))
+    .reduce((balance, amount) => (balance = balance += amount), BigInt(0));
   console.log("The balance of the account is", balance);
 }
